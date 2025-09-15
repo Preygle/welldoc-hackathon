@@ -19,18 +19,14 @@ with open("heart_disease_model.pkl", "rb") as f:
     heart_disease_model = pickle.load(f)
 
 st.set_page_config(layout="wide")
-st.title('Health Risk Prediction AI')
+st.title("GlucoGuard's Health Risk Prediction AI")
 
 st.info("This application predicts the risk of Diabetes, Heart Disease, and Hypertension based on user inputs. The predictions are made by XGBoost models.")
-
-# IMPORTANT: Replace with your actual Gemini API Key
-# To get an API key, visit https://makersuite.google.com/
 gemini_api_key = "AIzaSyAEDFRrwIO_P6aOHHw7opzmvBx9s8UgwDg"
 
 with st.form("prediction_form"):
     st.header('Patient Information')
 
-    # User Inputs laid out in columns
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -57,12 +53,12 @@ with st.form("prediction_form"):
     submitted = st.form_submit_button("Predict Health Risks & Get AI Suggestions")
 
 if submitted:
-    # --- 1. Collect and Encode Inputs ---
+    # CollectInputs
     gender_encoded = 1 if gender == 'Male' else 0
     smoking_map = {'Never': 0, 'Former': 1, 'Current': 2, 'Ever': 3, 'Not Current': 4}
     smoking_encoded = smoking_map[smoking_status_str]
 
-    # --- 2. Engineer Features ---
+    # Engineer Features
     height_m = height_cm / 100
     bmi = round(weight_kg / (height_m ** 2), 2) if height_m > 0 else 0
 
@@ -83,7 +79,7 @@ if submitted:
     poor_sleep_encoded = 1 if sleep_hours < 7 else 0
     stress_x_poor_sleep_encoded = high_stress_encoded * poor_sleep_encoded
 
-    # --- 3. Assemble Feature Vector ---
+    # Assemble Feature Vector
     feature_cols_ordered = [
         'gender', 'age', 'bmi', 'glucose level', 'heart rate', 'sleep hours', 'sugar level', 'cholesterol',
         'systolic_bp', 'diastolic_bp', 'smoking_status', 'Step_count', 'drinks_per_week',
@@ -103,7 +99,7 @@ if submitted:
 
     input_df = pd.DataFrame([user_data])[feature_cols_ordered]
 
-    # --- 4. Make Predictions ---
+    #Make Predictions
     diabetes_pred = diabetes_model.predict(input_df)[0]
     diabetes_prob = diabetes_model.predict_proba(input_df)[0][1]
     hypertension_pred = hypertension_model.predict(input_df)[0]
@@ -137,7 +133,7 @@ if submitted:
 
     st.markdown("---")
 
-    # --- 5. Generate AI-Powered Suggestions ---
+    #Generate AI-Powered Suggestions
     st.subheader("AI-Powered Suggestions")
     if gemini_api_key == "YOUR_API_KEY":
         st.warning("Please replace 'YOUR_API_KEY' in the code with your actual Gemini API Key to generate suggestions.")
