@@ -4,6 +4,10 @@ This project is a web-based application that predicts a user's risk for three ch
 
 The application is built with Python, using XGBoost for the prediction models and Streamlit for the interactive user interface.
 
+## Live Demo
+
+The deployed Streamlit application can be accessed here: [health-risk-prediction-ai.streamlit.app/](https://health-risk-prediction-ai.streamlit.app/)
+
 ## Features
 
 - **Chronic Disease Prediction:** Predicts the probability of developing Diabetes, Hypertension, and Heart Disease.
@@ -75,7 +79,11 @@ The training process is handled by the `create_models.py` script. It loads the `
     pip install -r requirements.txt
     ```
 4.  **Set up Gemini API Key:**
-    Open `app.py` and replace `"AIzaSyAEDFRrwIO_P6aOHHw7opzmvBx9s8UgwDg"` with your actual Gemini API key.
+    Create a `.env` file in the root directory of the project and add the following line:
+    ```
+    GEMINI_API_KEY="YOUR_API_KEY"
+    ```
+    Replace `"YOUR_API_KEY"` with your actual Gemini API key.
 
 ## Usage
 
