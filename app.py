@@ -1,6 +1,3 @@
-'''
-Streamlit Frontend for Health Prediction
-'''
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -9,6 +6,9 @@ import os
 import re
 import pickle
 import xgboost as xgb
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Load the trained models
 with open("diabetes_model.pkl", "rb") as f:
@@ -22,7 +22,7 @@ st.set_page_config(layout="wide")
 st.title("GlucoGuard's Health Risk Prediction AI")
 
 st.info("This application predicts the risk of Diabetes, Heart Disease, and Hypertension based on user inputs. The predictions are made by XGBoost models.")
-gemini_api_key = "AIzaSyAEDFRrwIO_P6aOHHw7opzmvBx9s8UgwDg"
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 with st.form("prediction_form"):
     st.header('Patient Information')
@@ -150,9 +150,9 @@ if submitted:
 
     # Generate AI-Powered Suggestions
     st.subheader("AI-Powered Personalized Suggestions")
-    if gemini_api_key == "YOUR_API_KEY":
+    if not gemini_api_key:
         st.warning(
-            "Please replace 'YOUR_API_KEY' in the code with your actual Gemini API Key to generate suggestions.")
+            "Please add your Gemini API Key to the .env file to generate suggestions.")
     else:
         try:
             genai.configure(api_key=gemini_api_key)
@@ -161,40 +161,40 @@ if submitted:
             activity_level_str = "Sedentary" if activity_level_encoded == 0 else "Moderately Active" if activity_level_encoded == 1 else "Active"
 
             prompt = f'''
-You are an expert health and wellness coach AI. Your task is to provide personalized, actionable, and supportive suggestions based on a user's health data.
+            You are an expert health and wellness coach AI. Your task is to provide personalized, actionable, and supportive suggestions based on a user's health data.
 
-**User's Health Profile:**
-- **Age:** {age}
-- **Gender:** {gender}
-- **BMI:** {bmi}
-- **Glucose Level:** {glucose_level} mg/dL
-- **Fasting Sugar Level:** {sugar_level} mg/dL
-- **Cholesterol:** {cholesterol} mg/dL
-- **Heart Rate:** {heart_rate} bpm
-- **Blood Pressure:** {systolic_bp}/{diastolic_bp} mmHg
-- **Smoking Habit:** {smoking_status_str}
-- **Alcohol Consumption:** {drinks_per_week} drinks per week
-- **Average Sleep:** {sleep_hours} hours/night
-- **Daily Steps:** {step_count}
-- **Stress Level (1-10):** {stress_rating}
+            **User's Health Profile:**
+            - **Age:** {age}
+            - **Gender:** {gender}
+            - **BMI:** {bmi}
+            - **Glucose Level:** {glucose_level} mg/dL
+            - **Fasting Sugar Level:** {sugar_level} mg/dL
+            - **Cholesterol:** {cholesterol} mg/dL
+            - **Heart Rate:** {heart_rate} bpm
+            - **Blood Pressure:** {systolic_bp}/{diastolic_bp} mmHg
+            - **Smoking Habit:** {smoking_status_str}
+            - **Alcohol Consumption:** {drinks_per_week} drinks per week
+            - **Average Sleep:** {sleep_hours} hours/night
+            - **Daily Steps:** {step_count}
+            - **Stress Level (1-10):** {stress_rating}
 
-**Derived Insights:**
-- **Activity Level:** {activity_level_str}
-- **Binge Drinking:** {"Yes" if binge_flag_encoded == 1 else "No"}
-- **High Stress:** {"Yes" if high_stress_encoded == 1 else "No"}
-- **Poor Sleep:** {"Yes" if poor_sleep_encoded == 1 else "No"}
+            **Derived Insights:**
+            - **Activity Level:** {activity_level_str}
+            - **Binge Drinking:** {"Yes" if binge_flag_encoded == 1 else "No"}
+            - **High Stress:** {"Yes" if high_stress_encoded == 1 else "No"}
+            - **Poor Sleep:** {"Yes" if poor_sleep_encoded == 1 else "No"}
 
-**Your Instructions:**
+            **Your Instructions:**
 
-1.  **Provide 2-3 concise, actionable bullet-point suggestions** for each of the following categories: `==DIET==`, `==EXERCISE==`, and `==LIFESTYLE==`.
-2.  **Start each category with the corresponding header** (e.g., `==DIET==`).
-3.  **Be empathetic and non-judgmental.** Use a positive and encouraging tone.
-4.  **Prioritize the most critical areas.**
-5.  **Acknowledge healthy habits.**
-6.  **Keep advice practical and easy to implement.**
-7.  **Identify and flag critical conditions.** If you identify a critical health risk, wrap your suggestion for it in `[CRITICAL]` and `[/CRITICAL]` tags.
-8.  **No need to generate "Remember, small, consistent changes can lead to significant improvements in your overall health and wellness. Keep up the fantastic work!"
-'''
+            1.  **Provide 2-3 concise, actionable bullet-point suggestions** for each of the following categories: `==DIET==`, `==EXERCISE==`, and `==LIFESTYLE==`.
+            2.  **Start each category with the corresponding header** (e.g., `==DIET==`).
+            3.  **Be empathetic and non-judgmental.** Use a positive and encouraging tone.
+            4.  **Prioritize the most critical areas.**
+            5.  **Acknowledge healthy habits.**
+            6.  **Keep advice practical and easy to implement.**
+            7.  **Identify and flag critical conditions.** If you identify a critical health risk, wrap your suggestion for it in `[CRITICAL]` and `[/CRITICAL]` tags.
+            8.  **No need to generate "Remember, small, consistent changes can lead to significant improvements in your overall health and wellness. Keep up the fantastic work!"
+            '''
 
             with st.spinner("Generating personalized suggestions with Gemini..."):
                 response = model.generate_content(prompt)
@@ -209,9 +209,12 @@ You are an expert health and wellness coach AI. Your task is to provide personal
                         st.error(suggestion.strip())
 
                 # Remove critical tags for main display
-                text = re.sub(r"\[CRITICAL\].*?\[/CRITICAL\]",
-                              "", text, flags=re.DOTALL | re.IGNORECASE)
-
+                text = re.sub(
+                    r"\[CRITICAL\](.*?)\[/CRITICAL\]",
+                    r"\1",
+                    text,
+                    flags=re.DOTALL | re.IGNORECASE
+                )
 
                 diet_suggestions = re.search(
                     r"==DIET==\n(.*?)\n==EXERCISE==", text, re.DOTALL)
@@ -245,7 +248,6 @@ You are an expert health and wellness coach AI. Your task is to provide personal
                     else:
                         st.markdown(
                             "No specific lifestyle suggestions at this time.")
-
 
         except Exception as e:
             st.error(f"An error occurred while generating suggestions: {e}")
