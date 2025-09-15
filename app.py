@@ -32,30 +32,45 @@ with st.form("prediction_form"):
     with col1:
         gender = st.selectbox('Gender', ['Male', 'Female'])
         age = st.number_input('Age', min_value=0, max_value=120, value=45)
-        height_cm = st.number_input('Height (cm)', min_value=50, max_value=250, value=170, help="Needed to calculate BMI.")
-        weight_kg = st.number_input('Weight (kg)', min_value=10, max_value=300, value=75, help="Needed to calculate BMI.")
-        smoking_status_str = st.selectbox('Smoking Habit', ['Never', 'Former', 'Current', 'Ever', 'Not Current'], index=0)
+        height_cm = st.number_input(
+            'Height (cm)', min_value=50, max_value=250, value=170, help="Needed to calculate BMI.")
+        weight_kg = st.number_input(
+            'Weight (kg)', min_value=10, max_value=300, value=75, help="Needed to calculate BMI.")
+        smoking_status_str = st.selectbox(
+            'Smoking Habit', ['Never', 'Former', 'Current', 'Ever', 'Not Current'], index=0)
 
     with col2:
-        glucose_level = st.number_input('Glucose Level (mg/dL)', min_value=50, max_value=500, value=100)
-        sugar_level = st.number_input('Sugar Level (Fasting, mg/dL)', min_value=50, max_value=500, value=90)
-        cholesterol = st.number_input('Cholesterol (mg/dL)', min_value=100, max_value=400, value=200)
-        heart_rate = st.number_input('Heart Rate (bpm)', min_value=40, max_value=200, value=72)
-        drinks_per_week = st.number_input('Alcoholic Drinks per Week', min_value=0, max_value=50, value=0)
+        glucose_level = st.number_input(
+            'Glucose Level (mg/dL)', min_value=50, max_value=500, value=100)
+        sugar_level = st.number_input(
+            'Sugar Level (Fasting, mg/dL)', min_value=50, max_value=500, value=90)
+        cholesterol = st.number_input(
+            'Cholesterol (mg/dL)', min_value=100, max_value=400, value=200)
+        heart_rate = st.number_input(
+            'Heart Rate (bpm)', min_value=40, max_value=200, value=72)
+        drinks_per_week = st.number_input(
+            'Alcoholic Drinks per Week', min_value=0, max_value=50, value=0)
 
     with col3:
-        systolic_bp = st.number_input('Systolic BP (High BP value)', min_value=70, max_value=250, value=120)
-        diastolic_bp = st.number_input('Diastolic BP (Low BP value)', min_value=40, max_value=150, value=80)
-        sleep_hours = st.number_input('Average Sleep Hours per Night', min_value=0.0, max_value=24.0, value=7.5, step=0.5)
-        step_count = st.number_input('Average Daily Step Count', min_value=0, max_value=30000, value=8000)
-        stress_rating = st.slider('Stress Rating (1-10)', min_value=1, max_value=10, value=5)
+        systolic_bp = st.number_input(
+            'Systolic BP (High BP value)', min_value=70, max_value=250, value=120)
+        diastolic_bp = st.number_input(
+            'Diastolic BP (Low BP value)', min_value=40, max_value=150, value=80)
+        sleep_hours = st.number_input(
+            'Average Sleep Hours per Night', min_value=0.0, max_value=24.0, value=7.5, step=0.5)
+        step_count = st.number_input(
+            'Average Daily Step Count', min_value=0, max_value=30000, value=8000)
+        stress_rating = st.slider(
+            'Stress Rating (1-10)', min_value=1, max_value=10, value=5)
 
-    submitted = st.form_submit_button("Predict Health Risks & Get AI Suggestions")
+    submitted = st.form_submit_button(
+        "Predict Health Risks & Get AI Suggestions")
 
 if submitted:
-    # CollectInputs
+    # Collect Inputs
     gender_encoded = 1 if gender == 'Male' else 0
-    smoking_map = {'Never': 0, 'Former': 1, 'Current': 2, 'Ever': 3, 'Not Current': 4}
+    smoking_map = {'Never': 0, 'Former': 1,
+                   'Current': 2, 'Ever': 3, 'Not Current': 4}
     smoking_encoded = smoking_map[smoking_status_str]
 
     # Engineer Features
@@ -99,7 +114,7 @@ if submitted:
 
     input_df = pd.DataFrame([user_data])[feature_cols_ordered]
 
-    #Make Predictions
+    # Make Predictions
     diabetes_pred = diabetes_model.predict(input_df)[0]
     diabetes_prob = diabetes_model.predict_proba(input_df)[0][1]
     hypertension_pred = hypertension_model.predict(input_df)[0]
@@ -133,17 +148,18 @@ if submitted:
 
     st.markdown("---")
 
-    #Generate AI-Powered Suggestions
-    st.subheader("AI-Powered Suggestions")
+    # Generate AI-Powered Suggestions
+    st.subheader("AI-Powered Personalized Suggestions")
     if gemini_api_key == "YOUR_API_KEY":
-        st.warning("Please replace 'YOUR_API_KEY' in the code with your actual Gemini API Key to generate suggestions.")
+        st.warning(
+            "Please replace 'YOUR_API_KEY' in the code with your actual Gemini API Key to generate suggestions.")
     else:
         try:
             genai.configure(api_key=gemini_api_key)
             model = genai.GenerativeModel('gemini-1.5-flash')
 
             activity_level_str = "Sedentary" if activity_level_encoded == 0 else "Moderately Active" if activity_level_encoded == 1 else "Active"
-            
+
             prompt = f'''
 You are an expert health and wellness coach AI. Your task is to provide personalized, actionable, and supportive suggestions based on a user's health data.
 
@@ -170,48 +186,71 @@ You are an expert health and wellness coach AI. Your task is to provide personal
 
 **Your Instructions:**
 
-1.  **Start with a brief, encouraging summary** of the user's overall health profile based on the provided data.
-2.  **Provide specific, numbered suggestions** in the following categories: Diet, Exercise, and Lifestyle.
+1.  **Provide 2-3 concise, actionable bullet-point suggestions** for each of the following categories: `==DIET==`, `==EXERCISE==`, and `==LIFESTYLE==`.
+2.  **Start each category with the corresponding header** (e.g., `==DIET==`).
 3.  **Be empathetic and non-judgmental.** Use a positive and encouraging tone.
-4.  **Prioritize the most critical areas.** If blood pressure is very high, that should be a primary focus.
-5.  **Acknowledge healthy habits.** If the user has a good sleep schedule or is a non-smoker, praise them for it.
-6.  **Keep advice practical and easy to implement.** For example, instead of "exercise more," suggest "try a 15-minute brisk walk after dinner."
+4.  **Prioritize the most critical areas.**
+5.  **Acknowledge healthy habits.**
+6.  **Keep advice practical and easy to implement.**
 7.  **Identify and flag critical conditions.** If you identify a critical health risk, wrap your suggestion for it in `[CRITICAL]` and `[/CRITICAL]` tags.
-8.  **Include a clear disclaimer** at the end that this is not medical advice and the user should consult a healthcare professional.
-
-**Critical Conditions to watch for:**
-- BMI < 18.5 or BMI >= 25
-- Sleep hours <= 4
-- Systolic BP >= 160 or Diastolic BP >= 100
-- Glucose Level >= 180
-- Heart Rate > 100 or < 50 (at rest)
-
-**Example of a critical suggestion:**
-`[CRITICAL]Your BMI is quite high, which puts you at a significant risk for several health issues. It is strongly recommended to consult with a doctor to create a safe and effective plan. In the meantime, consider starting with a short, 10-minute walk each day.[/CRITICAL]`
-
-**Generate the response now.**
+8.  **No need to generate "Remember, small, consistent changes can lead to significant improvements in your overall health and wellness. Keep up the fantastic work!"
 '''
 
             with st.spinner("Generating personalized suggestions with Gemini..."):
                 response = model.generate_content(prompt)
                 text = response.text
 
-                critical_suggestions = re.findall(r"\[CRITICAL\](.*?)\[/CRITICAL\]", text, re.DOTALL)
-                
+                # --- Critical Alerts ---
+                critical_suggestions = re.findall(
+                    r"\[CRITICAL\](.*?)\[/CRITICAL\]", text, re.DOTALL | re.IGNORECASE)
                 if critical_suggestions:
-                    st.subheader("Critical Alerts")
+                    st.subheader("🚨 Critical Alerts")
                     for suggestion in critical_suggestions:
                         st.error(suggestion.strip())
 
-                non_critical_text = re.sub(r"\[CRITICAL\].*?\[/CRITICAL\]", "", text, flags=re.DOTALL)
-                
-                st.subheader("Personalized Suggestions")
-                st.markdown(non_critical_text.strip())
+                # Remove critical tags for main display
+                text = re.sub(r"\[CRITICAL\].*?\[/CRITICAL\]",
+                              "", text, flags=re.DOTALL | re.IGNORECASE)
+
+
+                diet_suggestions = re.search(
+                    r"==DIET==\n(.*?)\n==EXERCISE==", text, re.DOTALL)
+                exercise_suggestions = re.search(
+                    r"==EXERCISE==\n(.*?)\n==LIFESTYLE==", text, re.DOTALL)
+                lifestyle_suggestions = re.search(
+                    r"==LIFESTYLE==\n(.*)", text, re.DOTALL)
+
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.markdown("### 🍎 Diet")
+                    if diet_suggestions:
+                        st.markdown(diet_suggestions.group(1).strip())
+                    else:
+                        st.markdown(
+                            "No specific diet suggestions at this time.")
+
+                with col2:
+                    st.markdown("### 🏃‍♂️ Exercise")
+                    if exercise_suggestions:
+                        st.markdown(exercise_suggestions.group(1).strip())
+                    else:
+                        st.markdown(
+                            "No specific exercise suggestions at this time.")
+
+                with col3:
+                    st.markdown("### 🧘‍♀️ Lifestyle")
+                    if lifestyle_suggestions:
+                        st.markdown(lifestyle_suggestions.group(1).strip())
+                    else:
+                        st.markdown(
+                            "No specific lifestyle suggestions at this time.")
+
 
         except Exception as e:
             st.error(f"An error occurred while generating suggestions: {e}")
 
-
     with st.expander("View Generated Model Input"):
-        st.write("The following data was generated from your inputs and will be fed into the models.")
+        st.write(
+            "The following data was generated from your inputs and will be fed into the models.")
         st.dataframe(input_df)
