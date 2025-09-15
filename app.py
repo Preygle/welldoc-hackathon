@@ -6,11 +6,22 @@ import pandas as pd
 import numpy as np
 import google.generativeai as genai
 import os
+import re
+import pickle
+import xgboost as xgb
+
+# Load the trained models
+with open("diabetes_model.pkl", "rb") as f:
+    diabetes_model = pickle.load(f)
+with open("hypertension_model.pkl", "rb") as f:
+    hypertension_model = pickle.load(f)
+with open("heart_disease_model.pkl", "rb") as f:
+    heart_disease_model = pickle.load(f)
 
 st.set_page_config(layout="wide")
 st.title('Health Risk Prediction AI')
 
-st.info("This application predicts the risk of Diabetes, Heart Disease, and Hypertension based on user inputs. The predictions are currently based on simple rules as a placeholder for more complex ML models.")
+st.info("This application predicts the risk of Diabetes, Heart Disease, and Hypertension based on user inputs. The predictions are made by XGBoost models.")
 
 # IMPORTANT: Replace with your actual Gemini API Key
 # To get an API key, visit https://makersuite.google.com/
@@ -92,30 +103,41 @@ if submitted:
 
     input_df = pd.DataFrame([user_data])[feature_cols_ordered]
 
-    st.subheader("Placeholder Prediction Results")
+    # --- 4. Make Predictions ---
+    diabetes_pred = diabetes_model.predict(input_df)[0]
+    diabetes_prob = diabetes_model.predict_proba(input_df)[0][1]
+    hypertension_pred = hypertension_model.predict(input_df)[0]
+    hypertension_prob = hypertension_model.predict_proba(input_df)[0][1]
+    heart_disease_pred = heart_disease_model.predict(input_df)[0]
+    heart_disease_prob = heart_disease_model.predict_proba(input_df)[0][1]
+
+    st.subheader("Prediction Results")
     pred_col1, pred_col2, pred_col3 = st.columns(3)
 
     with pred_col1:
-        if glucose_level > 125:
+        st.metric("Diabetes Risk", f"{diabetes_prob:.0%}")
+        if diabetes_pred == 1:
             st.error("High Risk for Diabetes")
         else:
             st.success("Low Risk for Diabetes")
 
     with pred_col2:
-        if cholesterol > 240 or systolic_bp > 140:
+        st.metric("Heart Disease Risk", f"{heart_disease_prob:.0%}")
+        if heart_disease_pred == 1:
             st.error("High Risk for Heart Disease")
         else:
             st.success("Low Risk for Heart Disease")
 
     with pred_col3:
-        if systolic_bp > 140 or diastolic_bp > 90:
+        st.metric("Hypertension Risk", f"{hypertension_prob:.0%}")
+        if hypertension_pred == 1:
             st.error("High Risk for Hypertension")
         else:
             st.success("Low Risk for Hypertension")
 
     st.markdown("---")
 
-    # --- 4. Generate AI-Powered Suggestions ---
+    # --- 5. Generate AI-Powered Suggestions ---
     st.subheader("AI-Powered Suggestions")
     if gemini_api_key == "YOUR_API_KEY":
         st.warning("Please replace 'YOUR_API_KEY' in the code with your actual Gemini API Key to generate suggestions.")
@@ -158,17 +180,37 @@ You are an expert health and wellness coach AI. Your task is to provide personal
 4.  **Prioritize the most critical areas.** If blood pressure is very high, that should be a primary focus.
 5.  **Acknowledge healthy habits.** If the user has a good sleep schedule or is a non-smoker, praise them for it.
 6.  **Keep advice practical and easy to implement.** For example, instead of "exercise more," suggest "try a 15-minute brisk walk after dinner."
-7.  **Include a clear disclaimer** at the end that this is not medical advice and the user should consult a healthcare professional.
+7.  **Identify and flag critical conditions.** If you identify a critical health risk, wrap your suggestion for it in `[CRITICAL]` and `[/CRITICAL]` tags.
+8.  **Include a clear disclaimer** at the end that this is not medical advice and the user should consult a healthcare professional.
 
-**Example Snippet for High Sugar:**
-"I noticed your sugar level is a bit elevated. A simple step could be to swap sugary drinks for water or herbal tea. This small change can make a big difference in managing your sugar levels throughout the day."
+**Critical Conditions to watch for:**
+- BMI < 18.5 or BMI >= 25
+- Sleep hours <= 4
+- Systolic BP >= 160 or Diastolic BP >= 100
+- Glucose Level >= 180
+- Heart Rate > 100 or < 50 (at rest)
+
+**Example of a critical suggestion:**
+`[CRITICAL]Your BMI is quite high, which puts you at a significant risk for several health issues. It is strongly recommended to consult with a doctor to create a safe and effective plan. In the meantime, consider starting with a short, 10-minute walk each day.[/CRITICAL]`
 
 **Generate the response now.**
 '''
 
             with st.spinner("Generating personalized suggestions with Gemini..."):
                 response = model.generate_content(prompt)
-                st.markdown(response.text)
+                text = response.text
+
+                critical_suggestions = re.findall(r"\[CRITICAL\](.*?)\[/CRITICAL\]", text, re.DOTALL)
+                
+                if critical_suggestions:
+                    st.subheader("Critical Alerts")
+                    for suggestion in critical_suggestions:
+                        st.error(suggestion.strip())
+
+                non_critical_text = re.sub(r"\[CRITICAL\].*?\[/CRITICAL\]", "", text, flags=re.DOTALL)
+                
+                st.subheader("Personalized Suggestions")
+                st.markdown(non_critical_text.strip())
 
         except Exception as e:
             st.error(f"An error occurred while generating suggestions: {e}")

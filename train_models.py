@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
-df = pd.read_csv("final_diabetes_dataset_with_imputed_smoking_status.csv")
+df = pd.read_csv("final.csv")
 
 # Fill NaN values with the mean of each column
 df.fillna(df.mean(), inplace=True)
